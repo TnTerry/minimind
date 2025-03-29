@@ -96,7 +96,7 @@ def train_epoch(epoch, wandb):
 
 
 def init_model(lm_config):
-    tokenizer = AutoTokenizer.from_pretrained('./model/minimind_tokenizer')
+    tokenizer = AutoTokenizer.from_pretrained('/root/minimind/model/minimind_tokenizer')
     model = MiniMindLM(lm_config).to(args.device)
     Logger(f'LLM总参数量：{sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:.3f} 百万')
     return model, tokenizer
@@ -117,10 +117,10 @@ def init_distributed_mode():
 # torchrun --nproc_per_node 2 1-pretrain.py
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Pretraining")
-    parser.add_argument("--out_dir", type=str, default="out")
+    parser.add_argument("--out_dir", type=str, default="/root/data/minimind_model")
     # 若要以最快速度实现zero则epochs设置为1轮；否则应当利用有限的数据训练2~6个epochs。
-    parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=5e-4)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", type=str, default="bfloat16")
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_layers', default=8, type=int)
     parser.add_argument('--max_seq_len', default=512, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
-    parser.add_argument("--data_path", type=str, default="./dataset/pretrain_hq.jsonl")
+    parser.add_argument("--data_path", type=str, default="/root/data/minimind_dataset/pretrain_hq.jsonl")
     args = parser.parse_args()
 
     lm_config = LMConfig(dim=args.dim, n_layers=args.n_layers, max_seq_len=args.max_seq_len, use_moe=args.use_moe)
