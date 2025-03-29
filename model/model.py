@@ -62,12 +62,15 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 class Attention(nn.Module):
     def __init__(self, args: LMConfig):
         super().__init__()
-        self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
+        self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads # GQA: kv is shared by multiple q
         assert args.n_heads % self.n_kv_heads == 0
+        # Local heads in distrubuted systems
         self.n_local_heads = args.n_heads
         self.n_local_kv_heads = self.n_kv_heads
         self.n_rep = self.n_local_heads // self.n_local_kv_heads
-        self.head_dim = args.dim // args.n_heads
+        self.head_dim = args.dim // args.n_heads # dim of a single head
+
+        # Ordinary attention settings
         self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
         self.wk = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
         self.wv = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
@@ -75,6 +78,7 @@ class Attention(nn.Module):
         self.attn_dropout = nn.Dropout(args.dropout)
         self.resid_dropout = nn.Dropout(args.dropout)
         self.dropout = args.dropout
+
         self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention') and args.flash_attn
         # print("WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0")
         mask = torch.full((1, 1, args.max_seq_len, args.max_seq_len), float("-inf"))
@@ -86,7 +90,7 @@ class Attention(nn.Module):
                 pos_cis: torch.Tensor,
                 past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
                 use_cache=False):
-        bsz, seq_len, _ = x.shape
+        bsz, seq_len, _ = x.shape # [batch, seq_len, hidden_dim]
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
         xq = xq.view(bsz, seq_len, self.n_local_heads, self.head_dim)
         xk = xk.view(bsz, seq_len, self.n_local_kv_heads, self.head_dim)

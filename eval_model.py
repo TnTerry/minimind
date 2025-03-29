@@ -125,7 +125,7 @@ def main():
     parser.add_argument('--history_cnt', default=0, type=int)
     parser.add_argument('--stream', default=True, type=bool)
     parser.add_argument('--load', default=0, type=int, help="0: 原生torch权重，1: transformers加载")
-    parser.add_argument('--model_mode', default=0, type=int,
+    parser.add_argument('--model_mode', default=1, type=int,
                         help="0: 预训练模型，1: SFT-Chat模型，2: RLHF-Chat模型，3: Reason模型")
     args = parser.parse_args()
 
